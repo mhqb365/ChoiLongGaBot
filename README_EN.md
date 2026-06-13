@@ -2,7 +2,7 @@
 
 English | [Tiếng Việt](README.md)
 
-`ChoiLongGaBot` is a Telegram moderation bot for groups and supergroups. It helps admins fight spam, delete unwanted content, lock chat permissions, ban/unban users, warn users, verify new members, and manage settings from a dashboard.
+`ChoiLongGaBot` is a Telegram moderation bot for groups and supergroups. It helps admins fight spam, delete unwanted content, lock chat permissions, ban/unban users, warn users, verify new members, collect member support requests, and manage settings from a dashboard.
 
 This guide is for group admins who want to add the bot and use its main features.
 
@@ -67,21 +67,28 @@ Send commands directly in the group. You do not need to append the bot username.
 | `/active`             | Admin  | Activate the group for the bot and dashboard |
 | `/deactive`           | Admin  | Remove group settings/data from the bot      |
 | `/report`             | Member | Reply to a spam message to report it         |
+| `/id username`        | Admin  | Resolve a Telegram user ID from a username   |
 | `/lock`               | Admin  | Reply to a user to lock chat permission      |
 | `/lock 10m`           | Admin  | Reply to a user to lock for 10 minutes       |
 | `/lock 2h`            | Admin  | Reply to a user to lock for 2 hours          |
 | `/lock 123456789`     | Admin  | Lock by Telegram user ID                     |
+| `/lock @username 10m` | Admin  | Lock by Telegram username for 10 minutes     |
 | `/lock 123456789 10m` | Admin  | Lock a user ID for 10 minutes                |
 | `/unlock`             | Admin  | Reply to a user to restore chat permission   |
 | `/unlock 123456789`   | Admin  | Restore chat permission by user ID           |
+| `/unlock @username`   | Admin  | Restore chat permission by username          |
 | `/ban`                | Admin  | Reply to a user to ban                       |
 | `/ban 123456789`      | Admin  | Ban by user ID                               |
+| `/ban @username`      | Admin  | Ban by Telegram username                     |
 | `/unban`              | Admin  | Reply to a user to unban                     |
 | `/unban 123456789`    | Admin  | Unban by user ID                             |
+| `/unban @username`    | Admin  | Unban by Telegram username                   |
 | `/warn`               | Admin  | Reply to a user to warn                      |
 | `/warn 123456789`     | Admin  | Warn by user ID                              |
+| `/warn @username`     | Admin  | Warn by Telegram username                    |
 | `/unwarn`             | Admin  | Reply to a user to clear warnings            |
 | `/unwarn 123456789`   | Admin  | Clear warnings by user ID                    |
+| `/unwarn @username`   | Admin  | Clear warnings by Telegram username          |
 
 ## Quick Usage
 
@@ -121,6 +128,29 @@ Report spam:
 
 Members can reply with `/report` to a spam message so admins can review it.
 
+Resolve a user ID from a username:
+
+```text
+/id @username
+```
+
+Moderation commands also accept usernames:
+
+```text
+/ban @username
+/lock @username 30m
+```
+
+Ask admins for support:
+
+```text
+/support
+```
+
+Members must send `/support` in a private chat with the bot, not in the group. The bot asks the member to choose a language first (`vi` or `en`), then asks for the group name. If no activated group matches, it asks the member to enter the name again. After a group is matched, the bot asks for the issue description, saves the request, and shows it in the Mini App dashboard with the member profile and any warning/ban history plus latest reason found for that member. Each member can send up to `2` support requests every `24` hours.
+
+Admins can resolve support requests from the Mini App with `Unlock`, `Unban`, or `Ignore`. The bot notifies the member with the result.
+
 ## Anti-Spam Features
 
 The bot can inspect:
@@ -149,6 +179,9 @@ When verification is enabled:
 
 - The bot does not ban, lock, or warn admins/creators.
 - Admin-only commands sent by regular members are deleted, except `/report`.
+- `/support` only works in a private chat with the bot. The bot asks for language, then group name, then issue description. Each member is limited to `2` requests every `24` hours.
+- `/id username` uses GramJS and requires `ANTI_SPAM_TELEGRAM_API_ID` plus `ANTI_SPAM_TELEGRAM_API_HASH`. It also works in private chat with the bot.
+- `/lock`, `/unlock`, `/ban`, `/unban`, `/warn`, and `/unwarn` accept both Telegram user IDs and `@username`.
 - `/lock` only restricts chat permission. It does not ban the user.
 - `/ban` uses Telegram ban. The user cannot rejoin until an admin or the bot runs `/unban`.
 - A group must run `/active` before it appears in the dashboard.
