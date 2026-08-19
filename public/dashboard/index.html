@@ -1,0 +1,228 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta name="robots" content="noindex,nofollow" />
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"
+    />
+    <title>Anti Spam Dashboard</title>
+    <script>
+      (() => {
+        const platform = navigator.platform || "";
+        const userAgent = navigator.userAgent || "";
+        const isIpadOs = platform === "MacIntel" && navigator.maxTouchPoints > 1;
+        const isAppleDevice = /iPhone|iPad|iPod|Macintosh/.test(userAgent) || /^Mac/.test(platform);
+
+        if (isAppleDevice || isIpadOs) {
+          document.documentElement.classList.add("apple-device");
+        }
+      })();
+    </script>
+    <link rel="stylesheet" href="/styles.css" />
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  </head>
+  <body>
+    <main class="app">
+      <header class="topbar">
+        <div>
+          <h1>Anti Spam</h1>
+        </div>
+        <button id="refreshButton" class="icon-button" type="button" data-i18n-title="refresh">
+          ↻
+        </button>
+      </header>
+
+      <section class="chat-picker">
+        <label class="setting-field">
+          <span data-i18n="managedGroups">Nhóm bạn quản lý</span>
+          <div class="select-wrap">
+            <select id="chatSelect"></select>
+          </div>
+        </label>
+      </section>
+
+      <div id="status" class="toast" role="status" aria-live="polite" hidden>
+        <span id="statusMessage"></span>
+        <button
+          id="statusCloseButton"
+          class="toast-close"
+          type="button"
+          data-i18n-aria-label="closeNotification"
+        >
+          ×
+        </button>
+      </div>
+
+      <div id="loadingOverlay" class="loading-overlay" aria-live="polite">
+        <img class="loading-logo" src="/logo.jpg" alt="" aria-hidden="true" />
+      </div>
+
+      <section id="dashboard" class="dashboard" hidden>
+        <section class="panel">
+          <h2 data-i18n="config">Cấu hình</h2>
+          <label class="setting-field">
+            <span data-i18n="language">Ngôn ngữ</span>
+            <div class="select-wrap">
+              <select id="languageSelect">
+                <option value="vi">Tiếng Việt</option>
+                <option value="en">English</option>
+              </select>
+            </div>
+          </label>
+          <label class="setting-field">
+            <span data-i18n="commandReplyDeleteSeconds">Tự xóa phản hồi sau</span>
+            <input
+              id="commandReplyDeleteSecondsInput"
+              type="number"
+              min="1"
+              max="60"
+              step="1"
+              inputmode="numeric"
+            />
+          </label>
+          <div class="settings-grid">
+            <label class="toggle-row">
+              <span data-i18n="cleanServiceMessages">Dọn tin hệ thống</span>
+              <input data-setting="cleanServiceMessages" type="checkbox" />
+            </label>
+            <label class="toggle-row">
+              <span data-i18n="cleanLinkMessages">Dọn link ref (không ban)</span>
+              <input data-setting="cleanLinkMessages" type="checkbox" />
+            </label>
+            <label class="toggle-row">
+              <span data-i18n="banLinkSenders">Ban người gửi link ref</span>
+              <input data-setting="banLinkSenders" type="checkbox" />
+            </label>
+            <label class="toggle-row">
+              <span data-i18n="cleanStoryMessages">Dọn story (không ban)</span>
+              <input data-setting="cleanStoryMessages" type="checkbox" />
+            </label>
+            <label class="toggle-row">
+              <span data-i18n="banStorySenders">Ban người gửi story</span>
+              <input data-setting="banStorySenders" type="checkbox" />
+            </label>
+            <label class="toggle-row">
+              <span data-i18n="memberVerificationEnabled">Xác minh người mới</span>
+              <input data-setting="memberVerificationEnabled" type="checkbox" />
+            </label>
+            <label id="memberVerificationTimeoutField" class="setting-field grid-field" hidden>
+              <span data-i18n="memberVerificationTimeoutMinutes">Thời gian xác minh người mới</span>
+              <input
+                id="memberVerificationTimeoutMinutesInput"
+                type="number"
+                min="1"
+                max="60"
+                step="1"
+                inputmode="numeric"
+              />
+            </label>
+          </div>
+        </section>
+
+        <section class="panel compact stats-panel">
+          <div>
+            <span class="label" data-i18n="keywords">Từ khóa</span>
+            <strong id="keywordCount">0</strong>
+          </div>
+          <div>
+            <span class="label" data-i18n="banned">Đã ban</span>
+            <strong id="bannedCount">0</strong>
+          </div>
+        </section>
+
+        <details class="panel support-panel">
+          <summary class="collapsible-summary">
+            <h2 data-i18n="supportRequests">Support</h2>
+            <span class="summary-meta">
+              <strong id="supportPanelCount">0</strong>
+              <span class="summary-icon" aria-hidden="true"></span>
+            </span>
+          </summary>
+          <div id="supportRequestList" class="support-request-list"></div>
+        </details>
+
+        <details class="panel command-panel">
+          <summary class="collapsible-summary">
+            <h2 data-i18n="commands">Lệnh trong nhóm</h2>
+            <span class="summary-icon" aria-hidden="true"></span>
+          </summary>
+          <div id="commandList" class="command-list"></div>
+        </details>
+
+        <section class="panel">
+          <div class="section-header">
+            <h2 data-i18n="blocklistTitle">Từ cấm</h2>
+            <div class="button-row">
+              <button id="copyKeywordsButton" class="secondary" type="button" data-i18n="copyAll">
+                Copy tất cả
+              </button>
+              <button id="clearKeywordsButton" class="danger" type="button" data-i18n="clearAll">
+                Xóa hết
+              </button>
+            </div>
+          </div>
+          <textarea
+            id="keywordInput"
+            rows="4"
+            data-i18n-placeholder="keywordPlaceholder"
+          ></textarea>
+          <div class="button-row">
+            <button id="addKeywordsButton" type="button" data-i18n="add">Thêm</button>
+            <button id="removeSelectedKeywordsButton" class="warning" type="button">Xóa</button>
+            <button
+              id="clearSelectionButton"
+              class="secondary"
+              type="button"
+              data-i18n="clearSelection"
+            >
+              Bỏ chọn
+            </button>
+          </div>
+          <div id="keywordList" class="keyword-list list-scroll"></div>
+          <button id="toggleKeywordListButton" class="list-toggle" type="button">
+            Xem thêm
+          </button>
+        </section>
+
+        <section class="panel">
+          <div class="section-header">
+            <h2 data-i18n="filterTitle">Trả lời tự động</h2>
+            <button id="clearFiltersButton" class="danger" type="button" data-i18n="clearAll">
+              Xóa hết
+            </button>
+          </div>
+          <textarea
+            id="filterTriggerInput"
+            rows="3"
+            data-i18n-placeholder="filterTriggerPlaceholder"
+          ></textarea>
+          <textarea
+            id="filterReplyInput"
+            rows="3"
+            data-i18n-placeholder="filterReplyPlaceholder"
+          ></textarea>
+          <div class="button-row">
+            <button id="addFiltersButton" type="button" data-i18n="add">Thêm</button>
+            <button id="removeSelectedFiltersButton" class="warning" type="button">Xóa</button>
+            <button
+              id="clearFilterSelectionButton"
+              class="secondary"
+              type="button"
+              data-i18n="clearSelection"
+            >
+              Bỏ chọn
+            </button>
+          </div>
+          <div id="filterList" class="keyword-list list-scroll"></div>
+          <button id="toggleFilterListButton" class="list-toggle" type="button">
+            Xem thêm
+          </button>
+        </section>
+      </section>
+    </main>
+
+    <script src="/app.js" type="module"></script>
+  </body>
+</html>

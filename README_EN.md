@@ -1,13 +1,13 @@
-# Choi Long Ga
+# ChoiLongGaBot - Choi Long Ga
 
-English | [Tiếng Việt](README.md)
+English | [Tiếng Việt](README_VI.md)
 
 `ChoiLongGaBot` is a Telegram moderation bot for groups and supergroups. It helps block spam, delete unwanted content, lock and unlock chat permissions, ban and unban users, warn users, verify new members, collect support requests from members, and manage settings through a Mini App dashboard.
 
 ## Add The Bot To A Group
 
 1. Open Telegram and search for `@ChoiLongGaBot`.
-2. Choose **Add to Group**.
+2. Choose **Add to Group** or **Add to Channel**.
 3. Select the group or supergroup you want to protect.
 4. Grant admin permissions to the bot.
 5. In the group, send:
