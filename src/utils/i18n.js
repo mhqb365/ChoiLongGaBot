@@ -13,6 +13,7 @@ const translations = {
       keywordMatch: "khớp từ khóa cấm",
       manualBan: "lệnh /ban thủ công",
       manualBanByUserId: "lệnh /ban thủ công bằng user ID",
+      manualBye: "lệnh /bye: xóa tin nhắn và ban",
       manualWarnThreshold: "vượt quá số lần cảnh báo",
       storyMessage: "story message",
       telegramBotReferralLink: "link referral"
@@ -28,6 +29,11 @@ const translations = {
       done: "Đã xóa <code>{count}</code> tin nhắn của user ID <code>{userId}</code>.",
       usage:
         "Reply tin nhắn của người dùng với <code>/clean</code> hoặc dùng <code>/clean 123456789</code> / <code>/clean @username</code>."
+    },
+    bye: {
+      cleaned: "Đã xóa <code>{count}</code> tin nhắn đã track.",
+      usage:
+        "Reply tin nhắn của người dùng với <code>/bye</code> hoặc dùng <code>/bye 123456789</code> / <code>/bye @username</code>."
     },
     status: {
       title: "Trạng thái user ID <code>{userId}</code>",
@@ -126,6 +132,7 @@ const translations = {
       keywordMatch: "keyword match",
       manualBan: "manual /ban command",
       manualBanByUserId: "manual /ban command by user ID",
+      manualBye: "manual /bye command: clean messages and ban",
       manualWarnThreshold: "warning threshold exceeded",
       storyMessage: "story message",
       telegramBotReferralLink: "Telegram bot referral link"
@@ -141,6 +148,11 @@ const translations = {
       done: "Deleted <code>{count}</code> messages for user ID <code>{userId}</code>.",
       usage:
         "Reply to a user's message with <code>/clean</code> or use <code>/clean 123456789</code> / <code>/clean @username</code>."
+    },
+    bye: {
+      cleaned: "Deleted <code>{count}</code> tracked messages.",
+      usage:
+        "Reply to a user's message with <code>/bye</code> or use <code>/bye 123456789</code> / <code>/bye @username</code>."
     },
     status: {
       title: "Status for user ID <code>{userId}</code>",

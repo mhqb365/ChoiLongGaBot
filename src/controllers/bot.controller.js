@@ -1,6 +1,7 @@
 const { handleActiveCommand } = require("./active.controller.js");
 const { handleBanCommand } = require("./ban.controller.js");
 const { handleCleanCommand } = require("./clean.controller.js");
+const { handleByeCommand } = require("./bye.controller.js");
 const { handleDeactiveCommand } = require("./deactive.controller.js");
 const { enforceFilters } = require("./filter.controller.js");
 const { handleIdCommand } = require("./id.controller.js");
@@ -157,6 +158,10 @@ const createBotController = ({ identityService, telegram, store }) => {
     }
 
     if (isCommand && (await handleCleanCommand(context))) {
+      return;
+    }
+
+    if (isCommand && (await handleByeCommand(context))) {
       return;
     }
 

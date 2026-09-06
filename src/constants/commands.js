@@ -4,6 +4,7 @@ const COMMANDS = {
   support: "/support",
   id: "/id",
   clean: "/clean",
+  bye: "/bye",
   status: "/status",
   lock: "/lock",
   unlock: "/unlock",
@@ -45,6 +46,12 @@ const COMMAND_GUIDE = [
     access: "admin",
     descriptionKey: "commandClean",
     examples: [COMMANDS.clean, `${COMMANDS.clean} 123456789`, `${COMMANDS.clean} @username`]
+  },
+  {
+    command: COMMANDS.bye,
+    access: "admin",
+    descriptionKey: "commandBye",
+    examples: [COMMANDS.bye, `${COMMANDS.bye} 123456789`, `${COMMANDS.bye} @username`]
   },
   {
     command: COMMANDS.status,
