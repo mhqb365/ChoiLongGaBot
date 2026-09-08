@@ -2,7 +2,7 @@
 module.exports = {
   apps: [
     {
-      name: "anti-spam-bot",
+      name: "ChoiLongGaBot",
       script: "./src/index.js"
     }
   ]
