@@ -185,7 +185,7 @@ When verification is enabled:
 - The bot does not ban, lock, or warn admins or creators.
 - Admin-only commands sent by regular members are deleted, except `/report`.
 - `/support` only works in a private chat with the bot.
-- `/id username` uses GramJS and requires `ANTI_SPAM_TELEGRAM_API_ID` and `ANTI_SPAM_TELEGRAM_API_HASH`.
+- `/id username` uses GramJS and requires `CHOILONGGABOT_TELEGRAM_API_ID` and `CHOILONGGABOT_TELEGRAM_API_HASH`.
 - `/lock`, `/unlock`, `/ban`, `/unban`, `/warn`, `/unwarn`, and `/clean` accept Telegram user IDs and `@username`.
 - `/lock` only restricts chat permission. It does not ban the user.
 - `/ban` uses a Telegram ban. The user cannot rejoin until an admin or the bot runs `/unban`.

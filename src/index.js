@@ -7,22 +7,56 @@ const { createStore } = require("./db.js");
 const { createTelegramIdentityService } = require("./services/telegram-identity.service.js");
 const { TelegramApi } = require("./telegram.js");
 
-const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+const ALLOWED_UPDATES = ["message", "callback_query", "chat_member"];
+const WEBHOOK_RETRY_MS = 10_000;
 
-const getRetryAfterMs = (message, fallbackMs) => {
-  const match = message.match(/retry after (\d+)/i);
-  return match ? Number(match[1]) * 1000 : fallbackMs;
+const enableWebhook = async ({ config, telegram }) => {
+  const payload = {
+    url: config.webhookUrl,
+    allowed_updates: ALLOWED_UPDATES,
+    drop_pending_updates: false
+  };
+
+  if (config.webhookSecret) {
+    payload.secret_token = config.webhookSecret;
+  }
+
+  await telegram.setWebhook(payload);
+  console.log(`telegram webhook enabled: ${config.webhookUrl}`);
 };
 
-// Điểm khởi động: nạp cấu hình, kết nối Telegram/MongoDB rồi chạy polling.
+const startWebhookRegistration = ({ config, telegram }) => {
+  let stopped = false;
+  let timer = null;
+
+  const run = async () => {
+    try {
+      await enableWebhook({ config, telegram });
+    } catch (error) {
+      console.error(`telegram webhook setup failed: ${error.message}`);
+      if (!stopped) {
+        timer = setTimeout(run, WEBHOOK_RETRY_MS);
+        timer.unref?.();
+      }
+    }
+  };
+
+  run();
+
+  return () => {
+    stopped = true;
+    if (timer) {
+      clearTimeout(timer);
+    }
+  };
+};
+
 const main = async () => {
   validateConfig();
 
   const telegram = new TelegramApi(config.botToken, {
     connectTimeoutSeconds: config.telegramConnectTimeoutSeconds,
     maxRetries: config.telegramMaxRetries,
-    pollingRequestGraceSeconds: config.pollingRequestGraceSeconds,
-    pollingTimeoutSeconds: config.pollingTimeoutSeconds,
     requestTimeoutSeconds: config.telegramRequestTimeoutSeconds
   });
   const botProfile = await telegram.getMe();
@@ -39,18 +73,19 @@ const main = async () => {
     store
   });
   const stopDashboardServer = startDashboardServer({
+    adminPassword: config.adminPassword,
+    adminUsername: config.adminUsername,
+    bot,
     botToken: config.botToken,
     port: config.dashboardPort,
     store,
-    telegram
+    telegram,
+    webhookSecret: config.webhookSecret
   });
-
-  let offset = 0;
-  let pollingRetryMs = config.pollingRetryBaseSeconds * 1000;
-  let shuttingDown = false;
+  const stopWebhookRegistration = startWebhookRegistration({ config, telegram });
 
   const shutdown = async () => {
-    shuttingDown = true;
+    stopWebhookRegistration();
     bot.stop();
     await identityService.disconnect();
     await stopDashboardServer();
@@ -61,32 +96,7 @@ const main = async () => {
   process.on("SIGINT", shutdown);
   process.on("SIGTERM", shutdown);
 
-  console.log(
-    `anti-spam-bot started as @${botProfile.username} with database:`,
-    process.env.ANTI_SPAM_MONGODB_DB
-  );
-
-  // Polling dùng offset để mỗi update Telegram chỉ được xử lý một lần.
-  while (!shuttingDown) {
-    try {
-      const updates = await telegram.getUpdates({
-        offset,
-        timeout: config.pollingTimeoutSeconds,
-        allowed_updates: ["message", "callback_query", "chat_member"]
-      });
-
-      for (const update of updates) {
-        offset = update.update_id + 1;
-        await bot.handleUpdate(update);
-      }
-
-      pollingRetryMs = config.pollingRetryBaseSeconds * 1000;
-    } catch (error) {
-      console.error(error.message);
-      await sleep(getRetryAfterMs(error.message, pollingRetryMs));
-      pollingRetryMs = Math.min(pollingRetryMs * 2, config.pollingRetryMaxSeconds * 1000);
-    }
-  }
+  console.log(`ChoiLongGaBot started as @${botProfile.username} with database:`, config.mongoDb);
 };
 
 main().catch((error) => {

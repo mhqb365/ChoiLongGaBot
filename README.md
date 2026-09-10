@@ -1,6 +1,6 @@
 # Anti Spam Telegram Bot
 
-Bot Telegram chống spam cho group/supergroup, chạy bằng Node.js, MongoDB, polling `getUpdates` và dashboard Telegram Mini App.
+Bot Telegram chống spam cho group/supergroup, chạy bằng Node.js, MongoDB, webhook Telegram và dashboard Telegram Mini App.
 
 ## Yêu Cầu
 
@@ -53,7 +53,7 @@ Gọi lệnh trực tiếp trong group, không kèm username bot. Ví dụ `/act
 Ghi chú:
 
 - `/lock` chỉ gọi `restrictChatMember` để chặn quyền chat, giống trạng thái member mới chưa xác minh. Lệnh này không ban và không ghi ban log.
-- `/id <username>` dùng GramJS, cần `ANTI_SPAM_TELEGRAM_API_ID` và `ANTI_SPAM_TELEGRAM_API_HASH`; lệnh này cũng dùng được trong chat riêng với bot.
+- `/id <username>` dùng GramJS, cần `CHOILONGGABOT_TELEGRAM_API_ID` và `CHOILONGGABOT_TELEGRAM_API_HASH`; lệnh này cũng dùng được trong chat riêng với bot.
 - Các lệnh `/lock`, `/unlock`, `/ban`, `/unban`, `/warn`, `/unwarn` nhận cả Telegram user ID và `@username`.
 - `/support` chỉ dùng trong chat riêng với bot. Bot sẽ hỏi ngôn ngữ trước (`vi` hoặc `en`), sau đó hỏi tên nhóm; nếu không tìm thấy group phù hợp thì yêu cầu nhập lại chính xác hơn. Sau khi match group, bot mới hỏi mô tả vấn đề và hiển thị request trong dashboard, kèm warning/ban history và lý do gần nhất nếu có để admin xem xét. Mỗi member gửi tối đa `2` request trong `24` giờ.
 - `/unlock` mở lại quyền chat theo quyền mặc định hiện tại của group.
@@ -63,7 +63,7 @@ Ghi chú:
 
 ## Dashboard Mini App
 
-Dashboard được serve từ `public/dashboard` trên `ANTI_SPAM_DASHBOARD_PORT`.
+Dashboard được serve từ `public/dashboard` trên `CHOILONGGABOT_DASHBOARD_PORT`.
 
 Luồng setup:
 
@@ -197,33 +197,31 @@ copy .env.example .env
 Biến môi trường:
 
 ```env
-ANTI_SPAM_BOT_TOKEN=your_bot_token
-ANTI_SPAM_MONGODB_URI=mongodb://127.0.0.1:27017
-ANTI_SPAM_MONGODB_DB=anti_spam_bot
-ANTI_SPAM_MONGODB_DNS_SERVERS=8.8.8.8,1.1.1.1
-ANTI_SPAM_POLLING_TIMEOUT_SECONDS=30
-ANTI_SPAM_POLLING_REQUEST_GRACE_SECONDS=20
-ANTI_SPAM_POLLING_RETRY_BASE_SECONDS=5
-ANTI_SPAM_POLLING_RETRY_MAX_SECONDS=60
-ANTI_SPAM_TELEGRAM_CONNECT_TIMEOUT_SECONDS=30
-ANTI_SPAM_TELEGRAM_REQUEST_TIMEOUT_SECONDS=30
-ANTI_SPAM_TELEGRAM_MAX_RETRIES=2
-ANTI_SPAM_TELEGRAM_API_ID=123456
-ANTI_SPAM_TELEGRAM_API_HASH=your_api_hash
-ANTI_SPAM_TELEGRAM_STRING_SESSION=
-ANTI_SPAM_DASHBOARD_PORT=3000
+CHOILONGGABOT_BOT_TOKEN=your_bot_token
+CHOILONGGABOT_MONGODB_URI=mongodb://127.0.0.1:27017
+CHOILONGGABOT_MONGODB_DB=choilonggabot
+CHOILONGGABOT_DASHBOARD_PORT=8004
+CHOILONGGABOT_WEBHOOK_URL=https://choilonggabot.mhqb365.com/telegram/webhook
+CHOILONGGABOT_WEBHOOK_SECRET=replace_with_random_secret
+CHOILONGGABOT_ADMIN_USERNAME=admin
+CHOILONGGABOT_ADMIN_PASSWORD=replace_with_strong_password
+CHOILONGGABOT_TELEGRAM_API_ID=123456
+CHOILONGGABOT_TELEGRAM_API_HASH=your_api_hash
+CHOILONGGABOT_TELEGRAM_STRING_SESSION=
 ```
 
 Ghi chú:
 
-- `ANTI_SPAM_BOT_TOKEN` là bắt buộc.
-- `ANTI_SPAM_MONGODB_URI` mặc định là `mongodb://127.0.0.1:27017`.
-- `ANTI_SPAM_MONGODB_DB` mặc định là `anti_spam_bot`.
-- `ANTI_SPAM_MONGODB_DNS_SERVERS` chỉ dùng khi URI là `mongodb+srv://`.
-- `ANTI_SPAM_TELEGRAM_API_ID` và `ANTI_SPAM_TELEGRAM_API_HASH` lấy từ `https://my.telegram.org/apps`; cần cho `/id <username>` và các lệnh moderation dùng `@username`.
-- `ANTI_SPAM_TELEGRAM_STRING_SESSION` có thể để trống khi dùng bot token. Chỉ cần đặt khi bạn chạy GramJS bằng session tài khoản Telegram riêng.
-- `ANTI_SPAM_DASHBOARD_PORT` mặc định là `3000`.
-- Các timeout/retry Telegram là tùy chọn và có default như ví dụ.
+- `CHOILONGGABOT_BOT_TOKEN` là bắt buộc.
+- `CHOILONGGABOT_MONGODB_URI` mặc định là `mongodb://127.0.0.1:27017`.
+- `CHOILONGGABOT_MONGODB_DB` mặc định là `choilonggabot`.
+- `CHOILONGGABOT_DASHBOARD_PORT` mặc định là `3000`; trên VPS hiện tại dùng `8004` nếu Cloudflare Tunnel trỏ về `localhost:8004`.
+- `CHOILONGGABOT_WEBHOOK_URL` cần khi dùng webhook.
+- `CHOILONGGABOT_WEBHOOK_SECRET` nên đặt chuỗi random dài để Telegram webhook được xác thực.
+- `CHOILONGGABOT_ADMIN_USERNAME` và `CHOILONGGABOT_ADMIN_PASSWORD` bật login fallback khi mở dashboard bằng browser ngoài Telegram.
+- `CHOILONGGABOT_TELEGRAM_API_ID` và `CHOILONGGABOT_TELEGRAM_API_HASH` lấy từ `https://my.telegram.org/apps`; cần cho `/id <username>` và các lệnh moderation dùng `@username`.
+- `CHOILONGGABOT_TELEGRAM_STRING_SESSION` có thể để trống khi dùng bot token. Chỉ cần đặt khi bạn chạy GramJS bằng session tài khoản Telegram riêng.
+- Các timeout/retry Telegram vẫn có default trong code; chỉ thêm vào `.env` khi cần tuning riêng.
 
 ## Chạy Bot
 

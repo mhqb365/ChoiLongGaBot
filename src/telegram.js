@@ -7,34 +7,24 @@ const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 class TelegramApi {
   constructor(token, options = {}) {
     this.baseUrl = `https://api.telegram.org/bot${token}`;
-    this.pollingRequestGraceSeconds = options.pollingRequestGraceSeconds ?? 20;
-    this.pollingTimeoutMs = (options.pollingTimeoutSeconds ?? 30) * 1000;
     this.requestTimeoutMs = (options.requestTimeoutSeconds ?? 30) * 1000;
     this.maxRetries = options.maxRetries ?? 2;
     this.retryBaseDelayMs = options.retryBaseDelayMs ?? 500;
-    this.transportTimeoutMs = Math.max(
-      this.requestTimeoutMs,
-      this.pollingTimeoutMs + this.pollingRequestGraceSeconds * 1000
-    );
     this.dispatcher = new Agent({
       connect: {
         timeout: (options.connectTimeoutSeconds ?? 30) * 1000
       },
-      headersTimeout: this.transportTimeoutMs,
-      bodyTimeout: this.transportTimeoutMs
+      headersTimeout: this.requestTimeoutMs,
+      bodyTimeout: this.requestTimeoutMs
     });
   }
 
-  getTimeoutMs(method, payload) {
-    if (method === "getUpdates") {
-      return ((payload.timeout ?? 30) + this.pollingRequestGraceSeconds) * 1000;
-    }
-
+  getTimeoutMs() {
     return this.requestTimeoutMs;
   }
 
-  getMaxAttempts(method) {
-    return method === "getUpdates" ? 1 : this.maxRetries + 1;
+  getMaxAttempts() {
+    return this.maxRetries + 1;
   }
 
   createError(message, retryable = false) {
@@ -45,7 +35,7 @@ class TelegramApi {
 
   async request(method, payload) {
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), this.getTimeoutMs(method, payload));
+    const timeout = setTimeout(() => controller.abort(), this.getTimeoutMs());
     const isMultipart = payload instanceof FormData;
 
     let response;
@@ -96,8 +86,8 @@ class TelegramApi {
     throw this.createError(`${method} failed after retries`);
   }
 
-  getUpdates(payload) {
-    return this.call("getUpdates", payload);
+  setWebhook(payload) {
+    return this.call("setWebhook", payload);
   }
 
   getMe() {

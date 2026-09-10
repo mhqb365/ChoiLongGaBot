@@ -170,6 +170,12 @@ const elements = {
   keywordCount: document.querySelector("#keywordCount"),
   keywordInput: document.querySelector("#keywordInput"),
   keywordList: document.querySelector("#keywordList"),
+  loginError: document.querySelector("#loginError"),
+  loginForm: document.querySelector("#loginForm"),
+  loginPassword: document.querySelector("#loginPassword"),
+  loginScreen: document.querySelector("#loginScreen"),
+  loginUsername: document.querySelector("#loginUsername"),
+  logoutButton: document.querySelector("#logoutButton"),
   toggleFilterListButton: document.querySelector("#toggleFilterListButton"),
   toggleKeywordListButton: document.querySelector("#toggleKeywordListButton"),
   languageSelect: document.querySelector("#languageSelect"),
@@ -197,6 +203,26 @@ const getUrlInitData = () => {
 };
 
 const getInitData = () => telegram?.initData || getUrlInitData();
+
+const getAuthToken = () => localStorage.getItem("choilonggabotAdminToken") ?? "";
+
+const setAuthToken = (token) => {
+  if (token) {
+    localStorage.setItem("choilonggabotAdminToken", token);
+  } else {
+    localStorage.removeItem("choilonggabotAdminToken");
+  }
+};
+
+const showLoginScreen = () => {
+  elements.loginScreen.hidden = false;
+  elements.logoutButton.hidden = true;
+};
+
+const hideLoginScreen = () => {
+  elements.loginScreen.hidden = true;
+  elements.logoutButton.hidden = !getAuthToken();
+};
 
 const translate = (key, params) => {
   const value = translations[state.language]?.[key] ?? translations.en[key] ?? key;
@@ -316,20 +342,28 @@ const showStatus = (message, type = "") => {
 
 const request = async (path, options = {}) => {
   const initData = getInitData();
-  if (!initData) {
-    throw new Error(translate("openInTelegram"));
+  const authToken = getAuthToken();
+  if (!initData && !authToken && path !== "/api/auth/login") {
+    showLoginScreen();
+    throw new Error("Admin login is required.");
   }
 
   const response = await fetch(path, {
     ...options,
     headers: {
       "content-type": "application/json",
-      "x-telegram-init-data": initData,
+      ...(initData ? { "x-telegram-init-data": initData } : {}),
+      ...(authToken ? { authorization: `Bearer ${authToken}` } : {}),
       ...(options.headers ?? {})
     }
   });
 
-  const payload = await response.json();
+  const payload = await response.json().catch(() => ({}));
+  if (response.status === 401 && path !== "/api/auth/login") {
+    setAuthToken("");
+    showLoginScreen();
+  }
+
   if (!response.ok) {
     throw new Error(payload.error ?? "Request failed.");
   }
@@ -717,6 +751,22 @@ const resolveSupportRequest = async (requestId, action) => {
   }
 };
 
+const login = async () => {
+  elements.loginError.hidden = true;
+  const payload = await request("/api/auth/login", {
+    method: "POST",
+    body: JSON.stringify({
+      password: elements.loginPassword.value,
+      username: elements.loginUsername.value.trim()
+    })
+  });
+
+  setAuthToken(payload.token);
+  elements.loginPassword.value = "";
+  hideLoginScreen();
+  await loadChats();
+};
+
 elements.keywordInput.addEventListener("input", renderKeywordInputStatus);
 elements.refreshButton.addEventListener("click", loadChats);
 elements.chatSelect.addEventListener("change", loadDashboard);
@@ -834,6 +884,17 @@ elements.toggleFilterListButton.addEventListener("click", () => {
   renderFilters(state.dashboard?.filters ?? []);
 });
 elements.statusCloseButton.addEventListener("click", hideStatus);
+elements.loginForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  login().catch((error) => {
+    elements.loginError.textContent = error.message;
+    elements.loginError.hidden = false;
+  });
+});
+elements.logoutButton.addEventListener("click", () => {
+  setAuthToken("");
+  showLoginScreen();
+});
 
 const exclusiveSettingPairs = {
   banLinkSenders: "cleanLinkMessages",
@@ -865,9 +926,10 @@ telegram?.ready();
 telegram?.expand();
 applyTranslations();
 
-if (!getInitData()) {
-  showStatus(translate("openInTelegram"), "error");
+if (!getInitData() && !getAuthToken()) {
+  showLoginScreen();
   hideInitialLoading();
 } else {
+  hideLoginScreen();
   loadChats();
 }

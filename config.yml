@@ -3,7 +3,7 @@ tunnel: a3a36cd0-914f-44a0-a398-ea6fb996e754
 credentials-file: C:\Users\Windows\.cloudflared\a3a36cd0-914f-44a0-a398-ea6fb996e754.json
 
 ingress:
-  - hostname: anti-spam-bot-4dev.mhqb365.com
+  - hostname: choilonggabot-4dev.mhqb365.com
     service: http://localhost:8004
 
   - service: http_status:404

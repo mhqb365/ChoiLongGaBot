@@ -1,6 +1,6 @@
 {
-  "name": "anti-spam-bot",
-  "version": "1.0.0",
+  "name": "ChoiLongGaBot",
+  "version": "1.0.1",
   "packageManager": "pnpm@11.1.1",
   "description": "Telegram anti-spam moderation bot",
   "main": "src/index.js",

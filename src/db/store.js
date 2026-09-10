@@ -1,4 +1,3 @@
-const dns = require("node:dns");
 const mongoose = require("mongoose");
 
 const { toBanLog } = require("./ban-log.js");
@@ -17,11 +16,7 @@ const {
 } = require("../models/index.js");
 
 // Kết nối MongoDB và khởi tạo index trước khi bot xử lý update.
-const connect = async ({ mongoUri, mongoDb, mongoDnsServers }) => {
-  if (mongoUri.startsWith("mongodb+srv://") && mongoDnsServers.length > 0) {
-    dns.setServers(mongoDnsServers);
-  }
-
+const connect = async ({ mongoUri, mongoDb }) => {
   await mongoose.connect(mongoUri, {
     dbName: mongoDb
   });

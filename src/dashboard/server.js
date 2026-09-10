@@ -1,4 +1,5 @@
 const fs = require("node:fs/promises");
+const crypto = require("node:crypto");
 const http = require("node:http");
 const path = require("node:path");
 
@@ -20,6 +21,11 @@ const MIME_TYPES = {
 const sendJson = (response, statusCode, payload) => {
   response.writeHead(statusCode, { "content-type": "application/json; charset=utf-8" });
   response.end(JSON.stringify(payload));
+};
+
+const sendText = (response, statusCode, text) => {
+  response.writeHead(statusCode, { "content-type": "text/plain; charset=utf-8" });
+  response.end(text);
 };
 
 const readJsonBody = async (request) => {
@@ -70,6 +76,37 @@ const FULL_CHAT_PERMISSIONS = {
 };
 
 const SUPPORT_ACTIONS = new Set(["unlock", "unban", "ignore"]);
+const ADMIN_SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000;
+const adminSessions = new Map();
+
+const createAdminSession = (user) => {
+  const token = crypto.randomBytes(32).toString("hex");
+  adminSessions.set(token, {
+    expiresAt: Date.now() + ADMIN_SESSION_TTL_MS,
+    user
+  });
+  return token;
+};
+
+const validateAdminSession = (token) => {
+  if (!token) {
+    return null;
+  }
+
+  const session = adminSessions.get(token);
+  if (!session) {
+    return null;
+  }
+
+  if (Date.now() > session.expiresAt) {
+    adminSessions.delete(token);
+    return null;
+  }
+
+  return session.user;
+};
+
+const isWebAdmin = (user) => user?.role === "admin" || user?.isWebAdmin === true;
 
 const getDashboardState = async ({ chat, chatId, store }) => {
   const [
@@ -117,6 +154,14 @@ const getDashboardState = async ({ chat, chatId, store }) => {
 };
 
 const getRequestUser = (request, botToken) => {
+  const authHeader = request.headers.authorization;
+  if (authHeader?.startsWith("Bearer ")) {
+    const sessionUser = validateAdminSession(authHeader.slice(7).trim());
+    if (sessionUser) {
+      return sessionUser;
+    }
+  }
+
   const initData = request.headers["x-telegram-init-data"];
   if (!initData) {
     return null;
@@ -127,8 +172,13 @@ const getRequestUser = (request, botToken) => {
 
 const getAuthenticatedUser = ({ botToken, request }) => {
   const user = getRequestUser(request, botToken);
-  if (!user?.id) {
-    return { error: { status: 401, message: "Telegram Mini App session is required." } };
+  if (!user?.id && !isWebAdmin(user)) {
+    return {
+      error: {
+        status: 401,
+        message: "Admin login or Telegram Mini App session is required."
+      }
+    };
   }
 
   return { user };
@@ -143,6 +193,11 @@ const authorizeChatAdmin = async ({ botToken, chatId, request, telegram }) => {
   }
 
   try {
+    if (isWebAdmin(user)) {
+      const chat = await telegram.getChat(chatId);
+      return { chat, user };
+    }
+
     const [chat, member] = await Promise.all([
       telegram.getChat(chatId),
       telegram.getChatMember(chatId, user.id)
@@ -167,6 +222,15 @@ const listAdminChats = async ({ botToken, request, store, telegram }) => {
   const chats = await Promise.all(
     chatIds.map(async (chatId) => {
       try {
+        if (isWebAdmin(user)) {
+          const chat = await telegram.getChat(chatId);
+          return {
+            id: chatId,
+            title: chat.title ?? String(chatId),
+            type: chat.type
+          };
+        }
+
         const [chat, member] = await Promise.all([
           telegram.getChat(chatId),
           telegram.getChatMember(chatId, user.id)
@@ -297,7 +361,7 @@ const handleSupportAction = async ({ action, chat, chatId, requestId, store, tel
   } else if (action === "unban") {
     await telegram.unbanChatMember(chatId, requesterId);
     await store.recordUnbanLog({
-      adminUserId: user.id,
+      adminUserId: user.id ?? 0,
       chatId,
       reason: "support request",
       source: "support",
@@ -315,7 +379,7 @@ const handleSupportAction = async ({ action, chat, chatId, requestId, store, tel
 
   await store.resolveSupportRequest(requestId, chatId, {
     action,
-    resolvedBy: user.id,
+    resolvedBy: user.id ?? 0,
     message: getSupportResolutionText({
       action,
       chat,
@@ -326,7 +390,40 @@ const handleSupportAction = async ({ action, chat, chatId, requestId, store, tel
   return { error: null };
 };
 
-const handleApiRequest = async ({ botToken, request, response, store, telegram, url }) => {
+const handleLoginRequest = async ({ adminPassword, adminUsername, request, response }) => {
+  if (!adminUsername || !adminPassword) {
+    sendJson(response, 503, { error: "Admin password login is not configured." });
+    return;
+  }
+
+  const body = await readJsonBody(request);
+  if (body.username !== adminUsername || body.password !== adminPassword) {
+    sendJson(response, 401, { error: "Invalid admin username or password." });
+    return;
+  }
+
+  const user = { username: adminUsername, role: "admin", isWebAdmin: true };
+  sendJson(response, 200, {
+    token: createAdminSession(user),
+    user
+  });
+};
+
+const handleApiRequest = async ({
+  adminPassword,
+  adminUsername,
+  botToken,
+  request,
+  response,
+  store,
+  telegram,
+  url
+}) => {
+  if (request.method === "POST" && url.pathname === "/api/auth/login") {
+    await handleLoginRequest({ adminPassword, adminUsername, request, response });
+    return;
+  }
+
   if (request.method === "GET" && url.pathname === "/api/chats") {
     const { chats, error } = await listAdminChats({
       botToken,
@@ -457,6 +554,34 @@ const handleApiRequest = async ({ botToken, request, response, store, telegram, 
   sendJson(response, 404, { error: "Not found." });
 };
 
+const handleWebhookRequest = async ({ bot, request, response, webhookSecret }) => {
+  if (!bot) {
+    sendText(response, 404, "Not found");
+    return;
+  }
+
+  if (request.method !== "POST") {
+    sendText(response, 405, "Method not allowed");
+    return;
+  }
+
+  if (
+    webhookSecret &&
+    request.headers["x-telegram-bot-api-secret-token"] !== webhookSecret
+  ) {
+    sendText(response, 401, "Unauthorized");
+    return;
+  }
+
+  const update = await readJsonBody(request);
+  response.writeHead(200, { "content-type": "application/json; charset=utf-8" });
+  response.end(JSON.stringify({ ok: true }));
+
+  bot.handleUpdate(update).catch((error) => {
+    console.error(`webhook update failed: ${error.stack ?? error.message}`);
+  });
+};
+
 const serveStatic = async (request, response, url) => {
   const pathname = url.pathname === "/" ? "/index.html" : url.pathname;
   const filePath = path.normalize(path.join(PUBLIC_DIR, pathname));
@@ -479,12 +604,35 @@ const serveStatic = async (request, response, url) => {
   }
 };
 
-const startDashboardServer = ({ botToken, port, store, telegram }) => {
+const startDashboardServer = ({
+  adminPassword,
+  adminUsername,
+  bot,
+  botToken,
+  port,
+  store,
+  telegram,
+  webhookSecret
+}) => {
   const server = http.createServer((request, response) => {
     const url = new URL(request.url, `http://${request.headers.host}`);
-    const handler = url.pathname.startsWith("/api/")
-      ? handleApiRequest({ botToken, request, response, store, telegram, url })
-      : serveStatic(request, response, url);
+    let handler;
+    if (url.pathname === "/telegram/webhook") {
+      handler = handleWebhookRequest({ bot, request, response, webhookSecret });
+    } else if (url.pathname.startsWith("/api/")) {
+      handler = handleApiRequest({
+        adminPassword,
+        adminUsername,
+        botToken,
+        request,
+        response,
+        store,
+        telegram,
+        url
+      });
+    } else {
+      handler = serveStatic(request, response, url);
+    }
 
     handler.catch((error) => {
       console.error(error);

@@ -90,7 +90,7 @@ const translations = {
       result: "Username <code>@{username}</code>\nID: <code>{id}</code>\nTên: <b>{name}</b>",
       usage: "Dùng <code>/id username</code> hoặc <code>/id @username</code>.",
       unconfigured:
-        "Chưa cấu hình GramJS. Hãy cài đặt <code>ANTI_SPAM_TELEGRAM_API_ID</code> và <code>ANTI_SPAM_TELEGRAM_API_HASH</code>.",
+        "Chưa cấu hình GramJS. Hãy cài đặt <code>CHOILONGGABOT_TELEGRAM_API_ID</code> và <code>CHOILONGGABOT_TELEGRAM_API_HASH</code>.",
       notFound: "Không tìm thấy người dùng với username này.",
       notUser: "Username này không thuộc về người dùng Telegram.",
       failed: "Lỗi GramJS khi tra username: <code>{reason}</code>."
@@ -209,7 +209,7 @@ const translations = {
       result: "Username <code>@{username}</code>\nID: <code>{id}</code>\nName: <b>{name}</b>",
       usage: "Use <code>/id username</code> or <code>/id @username</code>.",
       unconfigured:
-        "GramJS is not configured. Set <code>ANTI_SPAM_TELEGRAM_API_ID</code> and <code>ANTI_SPAM_TELEGRAM_API_HASH</code>.",
+        "GramJS is not configured. Set <code>CHOILONGGABOT_TELEGRAM_API_ID</code> and <code>CHOILONGGABOT_TELEGRAM_API_HASH</code>.",
       notFound: "No user was found for that username.",
       notUser: "That username does not belong to a Telegram user.",
       failed: "GramJS username lookup failed: <code>{reason}</code>."

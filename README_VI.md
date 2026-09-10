@@ -185,7 +185,7 @@ Khi bật verification:
 - Bot không ban, lock hoặc warn admin/creator.
 - Lệnh admin do member thường gửi sẽ bị xóa, trừ `/report`.
 - `/support` chỉ dùng trong chat riêng với bot.
-- `/id username` dùng GramJS, cần `ANTI_SPAM_TELEGRAM_API_ID` và `ANTI_SPAM_TELEGRAM_API_HASH`.
+- `/id username` dùng GramJS, cần `CHOILONGGABOT_TELEGRAM_API_ID` và `CHOILONGGABOT_TELEGRAM_API_HASH`.
 - `/lock`, `/unlock`, `/ban`, `/unban`, `/warn`, `/unwarn` nhận cả Telegram user ID và `@username`.
 - `/lock` chỉ khóa quyền chat, không ban user.
 - `/ban` dùng Telegram ban, user không thể tự join lại cho đến khi được `/unban`.
