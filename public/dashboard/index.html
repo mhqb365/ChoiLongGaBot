@@ -43,26 +43,57 @@
       </div>
     </div>
 
+    <div id="confirmModal" class="confirm-modal" hidden>
+      <div class="confirm-box" role="dialog" aria-modal="true" aria-labelledby="confirmTitle">
+        <h2 id="confirmTitle" data-i18n="removeGroup">Remove Group</h2>
+        <p id="confirmMessage"></p>
+        <div class="confirm-actions">
+          <button id="confirmCancelButton" class="secondary" type="button" data-i18n="cancel">
+            Cancel
+          </button>
+          <button id="confirmAcceptButton" class="danger-button" type="button" data-i18n="remove">
+            Remove
+          </button>
+        </div>
+      </div>
+    </div>
+
     <main class="app">
       <header class="topbar">
         <div>
           <h1>Anti Spam</h1>
         </div>
-        <div class="topbar-actions">
+        <div id="topbarActions" class="topbar-actions">
           <button id="logoutButton" class="secondary" type="button" hidden>Logout</button>
           <button id="refreshButton" class="icon-button" type="button" data-i18n-title="refresh">
-          ↻
+            ↻
           </button>
         </div>
       </header>
 
-      <section class="chat-picker">
+      <section id="chatPicker" class="chat-picker">
         <label class="setting-field">
           <span data-i18n="managedGroups">Nhóm bạn quản lý</span>
           <div class="select-wrap">
             <select id="chatSelect"></select>
           </div>
         </label>
+        <div class="chat-picker-actions">
+          <button
+            id="removeGroupButton"
+            class="danger-button"
+            type="button"
+            data-i18n="removeGroup"
+          >
+            Remove group
+          </button>
+        </div>
+      </section>
+
+      <section id="emptyState" class="empty-state" hidden>
+        <p data-i18n="emptyGroupsMessage">
+          Chưa quản lý nhóm nào cả, add bot vào nhóm rồi gọi lệnh /active đi
+        </p>
       </section>
 
       <div id="status" class="toast" role="status" aria-live="polite" hidden>
@@ -203,9 +234,7 @@
             </button>
           </div>
           <div id="keywordList" class="keyword-list list-scroll"></div>
-          <button id="toggleKeywordListButton" class="list-toggle" type="button">
-            Xem thêm
-          </button>
+          <button id="toggleKeywordListButton" class="list-toggle" type="button">Xem thêm</button>
         </section>
 
         <section class="panel">
@@ -238,9 +267,7 @@
             </button>
           </div>
           <div id="filterList" class="keyword-list list-scroll"></div>
-          <button id="toggleFilterListButton" class="list-toggle" type="button">
-            Xem thêm
-          </button>
+          <button id="toggleFilterListButton" class="list-toggle" type="button">Xem thêm</button>
         </section>
       </section>
     </main>

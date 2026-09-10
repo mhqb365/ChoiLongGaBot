@@ -457,6 +457,12 @@ const handleApiRequest = async ({
     return;
   }
 
+  if (request.method === "DELETE" && url.pathname === "/api/chats") {
+    await store.deleteChatData(chatId);
+    sendJson(response, 200, { ok: true });
+    return;
+  }
+
   if (request.method === "GET" && url.pathname === "/api/dashboard") {
     sendJson(response, 200, await getDashboardState({ chat, chatId, store }));
     return;

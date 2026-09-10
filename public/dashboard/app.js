@@ -13,6 +13,7 @@ const translations = {
     cleanServiceMessages: "Dọn tin hệ thống",
     cleanStoryMessages: "Dọn story (không ban)",
     clearAll: "Xóa hết",
+    cancel: "Hủy",
     copyAll: "Copy tất cả",
     clearSelection: "Bỏ chọn",
     closeNotification: "Đóng thông báo",
@@ -35,6 +36,7 @@ const translations = {
     config: "Cấu hình",
     confirmClearKeywords: "Xóa toàn bộ blocklist?",
     confirmClearFilters: "Xóa toàn bộ filter?",
+    confirmRemoveGroup: (group) => `Xóa nhóm "${group}" khỏi dashboard?`,
     copyFailed: "Không thể copy từ khóa.",
     keywordPlaceholder: "có thể thêm nhiều câu từ, phân tách bằng dấu phẩy hoặc xuống dòng",
     keywords: "Từ khóa",
@@ -42,6 +44,7 @@ const translations = {
     filterTitle: "Trả lời tự động",
     filterTriggerPlaceholder:
       "từ khóa hoặc cụm từ kích hoạt, phân tách bằng dấu phẩy hoặc xuống dòng",
+    emptyGroupsMessage: "Chưa quản lý nhóm nào cả, add bot vào nhóm rồi gọi lệnh /active đi",
     noFiltersToCopy: "Không có filter để copy.",
     noKeywordsToCopy: "Không có từ khóa để copy.",
     keywordsUpdated: "Đã cập nhật blocklist.",
@@ -53,6 +56,9 @@ const translations = {
     noGroups: "Không tìm thấy nhóm bạn quản lý.",
     openInTelegram: "Mở dashboard bằng Telegram Mini App.",
     refresh: "Tải lại",
+    remove: "Xóa",
+    removeGroup: "Xóa nhóm",
+    groupRemoved: "Đã xóa nhóm.",
     removeSelected: "Xóa",
     removeSelectedCount: (count) => `Xóa ${count}`,
     saved: "Đã lưu.",
@@ -78,6 +84,7 @@ const translations = {
     cleanServiceMessages: "Clean service messages",
     cleanStoryMessages: "Clean stories (no ban)",
     clearAll: "Clear all",
+    cancel: "Cancel",
     copyAll: "Copy all",
     clearSelection: "Clear selection",
     closeNotification: "Close notification",
@@ -103,12 +110,14 @@ const translations = {
     config: "Settings",
     confirmClearKeywords: "Clear the entire blocklist?",
     confirmClearFilters: "Clear the entire filter list?",
+    confirmRemoveGroup: (group) => `Remove group "${group}" from dashboard?`,
     copyFailed: "Could not copy keywords.",
     keywordPlaceholder: "add multiple phrases, separated by commas or new lines",
     keywords: "Keywords",
     filterReplyPlaceholder: "fixed reply content",
     filterTitle: "Reply filter",
     filterTriggerPlaceholder: "trigger keyword or phrase",
+    emptyGroupsMessage: "Chưa quản lý nhóm nào cả, add bot vào nhóm rồi gọi lệnh /active đi",
     noFiltersToCopy: "There are no filters to copy.",
     noKeywordsToCopy: "There are no keywords to copy.",
     keywordsUpdated: "Blocklist updated.",
@@ -120,6 +129,9 @@ const translations = {
     noGroups: "No manageable groups found.",
     openInTelegram: "Open the dashboard from the Telegram Mini App.",
     refresh: "Refresh",
+    remove: "Remove",
+    removeGroup: "Remove group",
+    groupRemoved: "Group removed.",
     removeSelected: "Remove",
     removeSelectedCount: (count) => `Remove ${count}`,
     saved: "Saved.",
@@ -155,13 +167,19 @@ const state = {
 const elements = {
   addKeywordsButton: document.querySelector("#addKeywordsButton"),
   bannedCount: document.querySelector("#bannedCount"),
+  chatPicker: document.querySelector("#chatPicker"),
   chatSelect: document.querySelector("#chatSelect"),
   commandReplyDeleteSecondsInput: document.querySelector("#commandReplyDeleteSecondsInput"),
   clearKeywordsButton: document.querySelector("#clearKeywordsButton"),
   clearFiltersButton: document.querySelector("#clearFiltersButton"),
+  confirmAcceptButton: document.querySelector("#confirmAcceptButton"),
+  confirmCancelButton: document.querySelector("#confirmCancelButton"),
+  confirmMessage: document.querySelector("#confirmMessage"),
+  confirmModal: document.querySelector("#confirmModal"),
   copyKeywordsButton: document.querySelector("#copyKeywordsButton"),
   commandList: document.querySelector("#commandList"),
   dashboard: document.querySelector("#dashboard"),
+  emptyState: document.querySelector("#emptyState"),
   addFiltersButton: document.querySelector("#addFiltersButton"),
   clearFilterSelectionButton: document.querySelector("#clearFilterSelectionButton"),
   filterList: document.querySelector("#filterList"),
@@ -185,6 +203,7 @@ const elements = {
     "#memberVerificationTimeoutMinutesInput"
   ),
   refreshButton: document.querySelector("#refreshButton"),
+  removeGroupButton: document.querySelector("#removeGroupButton"),
   clearSelectionButton: document.querySelector("#clearSelectionButton"),
   removeSelectedFiltersButton: document.querySelector("#removeSelectedFiltersButton"),
   removeSelectedKeywordsButton: document.querySelector("#removeSelectedKeywordsButton"),
@@ -193,6 +212,7 @@ const elements = {
   statusMessage: document.querySelector("#statusMessage"),
   supportPanelCount: document.querySelector("#supportPanelCount"),
   supportRequestList: document.querySelector("#supportRequestList"),
+  topbarActions: document.querySelector("#topbarActions"),
   unbannedCount: document.querySelector("#unbannedCount")
 };
 
@@ -223,6 +243,46 @@ const hideLoginScreen = () => {
   elements.loginScreen.hidden = true;
   elements.logoutButton.hidden = !getAuthToken();
 };
+
+const confirmDialog = (message) =>
+  new Promise((resolve) => {
+    let done = false;
+
+    const close = (accepted) => {
+      if (done) {
+        return;
+      }
+
+      done = true;
+      elements.confirmModal.hidden = true;
+      elements.confirmAcceptButton.removeEventListener("click", accept);
+      elements.confirmCancelButton.removeEventListener("click", cancel);
+      elements.confirmModal.removeEventListener("click", backdrop);
+      document.removeEventListener("keydown", keydown);
+      resolve(accepted);
+    };
+
+    const accept = () => close(true);
+    const cancel = () => close(false);
+    const backdrop = (event) => {
+      if (event.target === elements.confirmModal) {
+        close(false);
+      }
+    };
+    const keydown = (event) => {
+      if (event.key === "Escape") {
+        close(false);
+      }
+    };
+
+    elements.confirmMessage.textContent = message;
+    elements.confirmModal.hidden = false;
+    elements.confirmAcceptButton.addEventListener("click", accept);
+    elements.confirmCancelButton.addEventListener("click", cancel);
+    elements.confirmModal.addEventListener("click", backdrop);
+    document.addEventListener("keydown", keydown);
+    elements.confirmCancelButton.focus();
+  });
 
 const translate = (key, params) => {
   const value = translations[state.language]?.[key] ?? translations.en[key] ?? key;
@@ -375,6 +435,11 @@ const getChatId = () => elements.chatSelect.value;
 
 const updateChatOptions = (chats) => {
   state.chats = chats;
+  const hasChats = chats.length > 0;
+  elements.chatPicker.hidden = !hasChats;
+  elements.emptyState.hidden = hasChats;
+  elements.removeGroupButton.hidden = !hasChats;
+  elements.topbarActions.hidden = !hasChats;
   elements.chatSelect.replaceChildren(
     ...chats.map((chat) => {
       const option = document.createElement("option");
@@ -389,6 +454,11 @@ const updateChatOptions = (chats) => {
   } else if (chats[0]) {
     elements.chatSelect.value = String(chats[0].id);
     state.chatId = elements.chatSelect.value;
+  } else {
+    state.chatId = "";
+    elements.dashboard.hidden = true;
+    elements.status.hidden = true;
+    localStorage.removeItem("antiSpamChatId");
   }
 };
 
@@ -646,7 +716,6 @@ const loadChats = async () => {
     const payload = await request("/api/chats");
     updateChatOptions(payload.chats);
     if (payload.chats.length === 0) {
-      showStatus(translate("noGroups"), "error");
       hideInitialLoading();
       return;
     }
@@ -655,6 +724,36 @@ const loadChats = async () => {
   } catch (error) {
     showStatus(error.message, "error");
     hideInitialLoading();
+  } finally {
+    setLoading(false);
+  }
+};
+
+const removeCurrentGroup = async () => {
+  const chatId = getChatId();
+  const chatTitle = elements.chatSelect.selectedOptions[0]?.textContent ?? chatId;
+
+  if (!chatId) {
+    showStatus(translate("noGroups"), "error");
+    return;
+  }
+
+  if (!(await confirmDialog(translate("confirmRemoveGroup", chatTitle)))) {
+    return;
+  }
+
+  setLoading(true);
+  try {
+    await request(`/api/chats?chatId=${encodeURIComponent(chatId)}`, {
+      method: "DELETE"
+    });
+    state.chatId = "";
+    elements.dashboard.hidden = true;
+    localStorage.removeItem("antiSpamChatId");
+    showStatus(translate("groupRemoved"), "ok");
+    await loadChats();
+  } catch (error) {
+    showStatus(error.message, "error");
   } finally {
     setLoading(false);
   }
@@ -769,6 +868,7 @@ const login = async () => {
 
 elements.keywordInput.addEventListener("input", renderKeywordInputStatus);
 elements.refreshButton.addEventListener("click", loadChats);
+elements.removeGroupButton.addEventListener("click", removeCurrentGroup);
 elements.chatSelect.addEventListener("change", loadDashboard);
 elements.languageSelect.addEventListener("change", () =>
   patchSettings({ language: elements.languageSelect.value })

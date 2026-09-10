@@ -69,6 +69,14 @@ button:disabled {
   opacity: 0.55;
 }
 
+button.danger-button {
+  background: var(--danger);
+}
+
+button.danger-button:hover {
+  background: #a92a30;
+}
+
 input,
 select,
 textarea {
@@ -155,6 +163,21 @@ p {
 
 .chat-picker {
   margin-bottom: 12px;
+}
+
+.empty-state {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-panel);
+  background: var(--panel);
+  color: var(--muted);
+  line-height: 1.5;
+  padding: 18px;
+}
+
+.chat-picker-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 12px;
 }
 
 .input-row,
@@ -281,6 +304,53 @@ p {
 
 .login-modal[hidden] {
   display: none;
+}
+
+.confirm-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 18px;
+  background: rgb(15 23 42 / 62%);
+  backdrop-filter: blur(4px);
+}
+
+.confirm-modal[hidden] {
+  display: none;
+}
+
+.confirm-box {
+  width: min(420px, 100%);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-panel);
+  background: var(--panel);
+  box-shadow: 0 20px 44px rgb(15 23 42 / 24%);
+  padding: 22px;
+}
+
+.confirm-box h2 {
+  font-size: 20px;
+  line-height: 1.2;
+  margin-bottom: 8px;
+}
+
+.confirm-box p {
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+.confirm-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 22px;
+}
+
+.confirm-actions button {
+  min-width: 92px;
 }
 
 .login-box {
