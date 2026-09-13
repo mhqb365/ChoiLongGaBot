@@ -31,7 +31,7 @@ const createModerationService = ({ telegram, canModerateUser }) => {
       return true;
     } catch (error) {
       if (isMessageNotFoundError(error)) {
-        return false;
+        return true;
       }
 
       console.warn(error.message);

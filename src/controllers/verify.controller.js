@@ -267,12 +267,14 @@ const startVerificationExpiryJob = ({ store, deleteMessageQuietly }) => {
         expiresAt: pending.expiresAt,
         updatedBy: "system"
       });
-      await store.deletePendingVerification(pending.chatId, pending.userId);
-      await Promise.all(
+      const deleted = await Promise.all(
         getValidMessageIds([pending.messageId, pending.joinMessageId]).map((messageId) =>
           deleteMessageQuietly(pending.chatId, messageId)
         )
       );
+      if (deleted.every(Boolean)) {
+        await store.deletePendingVerification(pending.chatId, pending.userId);
+      }
     }
   };
 
